@@ -1,20 +1,18 @@
 from django.urls import path, include
-from rest_framework.routers import SimpleRouter
-from .views import (
-    index_view,
-    TutorViewSet, MascotaViewSet, VeterinarioViewSet,
-    CitaMedicaViewSet, FichaMedicaViewSet, RecordatorioPreventivoViewSet
-)
+from rest_framework.routers import DefaultRouter
+from . import views
 
-router = SimpleRouter()
-router.register(r'tutores', TutorViewSet)
-router.register(r'mascotas', MascotaViewSet)
-router.register(r'veterinarios', VeterinarioViewSet)
-router.register(r'citas', CitaMedicaViewSet)
-router.register(r'fichas', FichaMedicaViewSet)
-router.register(r'recordatorios', RecordatorioPreventivoViewSet)
+router = DefaultRouter()
+router.register(r'tutores', views.TutorViewSet)
+router.register(r'mascotas', views.MascotaViewSet)
+router.register(r'veterinarios', views.VeterinarioViewSet)
+router.register(r'citas', views.CitaMedicaViewSet)
+router.register(r'fichas', views.FichaMedicaViewSet)
+router.register(r'recordatorios', views.RecordatorioPreventivoViewSet)
 
 urlpatterns = [
-    path('', index_view, name='home'), 
+    path('', views.index_view, name='index'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
     path('', include(router.urls)),
 ]

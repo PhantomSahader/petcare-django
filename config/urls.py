@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from petcare.views import index_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api-auth/', include('rest_framework.urls')),  # <--- Habilita Login / Logout de DRF
     path('', include('petcare.urls')),
 ]

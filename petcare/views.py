@@ -1,4 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from rest_framework import viewsets
 from .models import Tutor, Mascota, Veterinario, CitaMedica, FichaMedica, RecordatorioPreventivo
 from .serializers import (
@@ -6,11 +9,34 @@ from .serializers import (
     CitaMedicaSerializer, FichaMedicaSerializer, RecordatorioPreventivoSerializer
 )
 
-# Vista para cargar la página web HTML
+# --- VISTAS DE AUTENTICACIÓN Y NAVEGACIÓN ---
+
+@login_required(login_url='/login/')
 def index_view(request):
     return render(request, 'petcare/index.html')
 
-# ViewSets para la API REST
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('/')
+    
+    if request.method == 'POST':
+        u = request.POST.get('username')
+        p = request.POST.get('password')
+        user = authenticate(request, username=u, password=p)
+        if user is not None:
+            login(request, user)
+            return redirect('/')
+        else:
+            messages.error(request, 'Usuario o contraseña incorrectos.')
+            
+    return render(request, 'petcare/login.html')
+
+def logout_view(request):
+    logout(request)
+    return redirect('/login/')
+
+# --- VIEWSETS DE LA API REST ---
+
 class TutorViewSet(viewsets.ModelViewSet):
     queryset = Tutor.objects.all()
     serializer_class = TutorSerializer
