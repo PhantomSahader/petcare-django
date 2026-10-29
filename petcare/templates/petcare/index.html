@@ -17,27 +17,25 @@
             </div>
             <div class="space-x-4">
                 <a href="#agenda" class="hover:text-indigo-200 transition">Agenda Médica</a>
-                <a href="#mascotas" class="hover:text-indigo-200 transition">Pacientes</a>
-                <a href="#recordatorios" class="hover:text-indigo-200 transition">Recordatorios</a>
                 <a href="/admin/" target="_blank" class="bg-indigo-600 hover:bg-indigo-800 px-3 py-2 rounded-lg text-sm font-semibold transition">Panel Admin</a>
             </div>
         </div>
     </nav>
 
     <!-- Banner Principal -->
-    <header class="bg-gradient-to-r from-indigo-600 to-blue-500 text-white py-12 px-4 shadow-inner">
+    <header class="bg-gradient-to-r from-indigo-600 to-blue-500 text-white py-10 px-4 shadow-inner">
         <div class="max-w-7xl mx-auto text-center">
-            <h2 class="text-4xl font-extrabold mb-3">Sistema de Gestión Médica & Fichas Clínicas</h2>
-            <p class="text-indigo-100 text-lg max-w-2xl mx-auto">
-                Control de agenda en tiempo real, trazabilidad de fichas clínicas y automatización de esquemas de vacunación sincronizados con AWS RDS.
+            <h2 class="text-3xl font-extrabold mb-2">Sistema de Gestión Médica & Fichas Clínicas</h2>
+            <p class="text-indigo-100 text-base max-w-2xl mx-auto">
+                Módulo interactivo CRUD conectado a PostgreSQL en AWS RDS.
             </p>
         </div>
     </header>
 
-    <!-- Contenido Principal / Dashboard -->
-    <main class="max-w-7xl mx-auto px-4 py-10 space-y-8">
+    <!-- Contenido Principal -->
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
-        <!-- Tarjetas Informativas -->
+        <!-- Métricas -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-indigo-500">
                 <p class="text-sm font-medium text-slate-500">Citas Registradas</p>
@@ -48,35 +46,43 @@
                 <p class="text-3xl font-bold text-slate-800 mt-1" id="total-mascotas">--</p>
             </div>
             <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-amber-500">
-                <p class="text-sm font-medium text-slate-500">Vacunas / Recordatorios</p>
-                <p class="text-3xl font-bold text-slate-800 mt-1" id="total-recordatorios">--</p>
+                <p class="text-sm font-medium text-slate-500">Veterinarios</p>
+                <p class="text-3xl font-bold text-slate-800 mt-1" id="total-vets">--</p>
             </div>
             <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
-                <p class="text-sm font-medium text-slate-500">Estado Base de Datos</p>
+                <p class="text-sm font-medium text-slate-500">Base de Datos</p>
                 <p class="text-sm font-bold text-emerald-600 mt-2">AWS RDS (Conectado)</p>
             </div>
         </div>
 
-        <!-- Tabla de Próximas Citas -->
+        <!-- Tabla CRUD de Citas -->
         <section id="agenda" class="bg-white p-6 rounded-xl shadow-md">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-slate-800">📅 Agenda Médica & Citas</h3>
-                <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-medium">Sincronizado vía API</span>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800">📅 Gestor de Citas Médicas (CRUD)</h3>
+                    <p class="text-sm text-slate-500">Crea, edita o elimina atenciones agendadas en tiempo real.</p>
+                </div>
+                <button onclick="abrirModalCrear()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition shadow flex items-center gap-2">
+                    <span>➕</span> Nueva Cita
+                </button>
             </div>
+
+            <!-- Tabla -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-50 text-slate-600 text-sm border-b">
-                            <th class="py-3 px-4">Mascota</th>
+                            <th class="py-3 px-4">ID / Mascota</th>
                             <th class="py-3 px-4">Veterinario</th>
                             <th class="py-3 px-4">Fecha y Hora</th>
                             <th class="py-3 px-4">Motivo</th>
                             <th class="py-3 px-4">Estado</th>
+                            <th class="py-3 px-4 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-citas" class="text-sm divide-y">
                         <tr>
-                            <td colspan="5" class="py-4 text-center text-slate-400">Cargando citas...</td>
+                            <td colspan="6" class="py-4 text-center text-slate-400">Cargando citas...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -85,51 +91,226 @@
 
     </main>
 
-    <!-- Conexión a Endpoints de Django -->
+    <!-- Modal Formulario (Crear / Editar) -->
+    <div id="modal-form" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800" id="modal-titulo">Nueva Cita Médica</h3>
+                <button onclick="cerrarModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+
+            <form id="form-cita" onsubmit="guardarCita(event)" class="space-y-4">
+                <input type="hidden" id="cita-id">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Mascota</label>
+                    <select id="select-mascota" required class="w-full mt-1 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <!-- Opciones dinámicas -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Veterinario</label>
+                    <select id="select-veterinario" required class="w-full mt-1 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <!-- Opciones dinámicas -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Fecha y Hora</label>
+                    <input type="datetime-local" id="input-fecha" required class="w-full mt-1 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Motivo</label>
+                    <input type="text" id="input-motivo" required placeholder="Ej: Control de rutina" class="w-full mt-1 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Estado</label>
+                    <select id="select-estado" class="w-full mt-1 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="PENDIENTE">PENDIENTE</option>
+                        <option value="CONFIRMADA">CONFIRMADA</option>
+                        <option value="ATENDIDA">ATENDIDA</option>
+                        <option value="CANCELADA">CANCELADA</option>
+                    </select>
+                </div>
+
+                <div id="error-msg" class="hidden text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200"></div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t">
+                    <button type="button" onclick="cerrarModal()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow">Guardar Cita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <script>
-        async function cargarDatos() {
+        let citasGlobales = [];
+        let mascotasGlobales = [];
+        let vetsGlobales = [];
+
+        async function cargarTodo() {
             try {
-                // 1. Cargar Citas Médicas desde /citas/
-                const resCitas = await fetch('/citas/');
-                const citas = await resCitas.json();
-                document.getElementById('total-citas').innerText = citas.length;
+                // Cargar relaciones
+                const [resMascotas, resVets, resCitas] = await Promise.all([
+                    fetch('/mascotas/'),
+                    fetch('/veterinarios/'),
+                    fetch('/citas/')
+                ]);
 
-                const tbody = document.getElementById('tabla-citas');
-                if (citas.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">No hay citas registradas. Agrégalas desde el admin.</td></tr>`;
-                } else {
-                    tbody.innerHTML = citas.map(c => `
-                        <tr class="hover:bg-slate-50">
-                            <td class="py-3 px-4 font-semibold">Mascota #${c.mascota}</td>
-                            <td class="py-3 px-4">Veterinario #${c.veterinario}</td>
-                            <td class="py-3 px-4">${new Date(c.fecha_hora).toLocaleString()}</td>
-                            <td class="py-3 px-4">${c.motivo}</td>
-                            <td class="py-3 px-4">
-                                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-semibold">${c.estado}</span>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
+                mascotasGlobales = await resMascotas.json();
+                vetsGlobales = await resVets.json();
+                citasGlobales = await resCitas.json();
 
-                // 2. Cargar Mascotas desde /mascotas/
-                const resMascotas = await fetch('/mascotas/');
-                const mascotas = await resMascotas.json();
-                document.getElementById('total-mascotas').innerText = mascotas.length;
 
-                // 3. Cargar Recordatorios desde /recordatorios/
-                const resRecordatorios = await fetch('/recordatorios/');
-                const recordatorios = await resRecordatorios.json();
-                document.getElementById('total-recordatorios').innerText = recordatorios.length;
+                document.getElementById('total-citas').innerText = citasGlobales.length;
+                document.getElementById('total-mascotas').innerText = mascotasGlobales.length;
+                document.getElementById('total-vets').innerText = vetsGlobales.length;
 
+                // Poblar selects del modal
+                const selMascota = document.getElementById('select-mascota');
+                selMascota.innerHTML = mascotasGlobales.map(m => `<option value="${m.id}">${m.nombre} (${m.especie})</option>`).join('');
+
+                const selVet = document.getElementById('select-veterinario');
+                selVet.innerHTML = vetsGlobales.map(v => `<option value="${v.id}">Vet ID #${v.id} - ${v.especialidad}</option>`).join('');
+
+                // Renderizar Tabla
+                renderTabla();
             } catch (err) {
-                console.error("Error al conectar con la API:", err);
-                document.getElementById('tabla-citas').innerHTML = `
-                    <tr><td colspan="5" class="py-4 text-center text-red-500">Error al cargar datos desde AWS RDS.</td></tr>
-                `;
+                console.error("Error al cargar datos:", err);
             }
         }
 
-        window.onload = cargarDatos;
+        function renderTabla() {
+            const tbody = document.getElementById('tabla-citas');
+
+            if (citasGlobales.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400">No hay citas registradas.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = citasGlobales.map(c => {
+                const m = mascotasGlobales.find(x => x.id === c.mascota);
+                const nombreMascota = m ? `${m.nombre} (#${m.id})` : `Mascota #${c.mascota}`;
+                const fechaFormateada = new Date(c.fecha_hora).toLocaleString('es-CL');
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-4 font-semibold text-slate-700">${nombreMascota}</td>
+                        <td class="py-3 px-4">Vet #${c.veterinario}</td>
+                        <td class="py-3 px-4">${fechaFormateada}</td>
+                        <td class="py-3 px-4">${c.motivo}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-1 text-xs rounded-full font-semibold bg-indigo-100 text-indigo-700">${c.estado}</span>
+                        </td>
+                        <td class="py-3 px-4 text-center space-x-2">
+                            <button onclick="abrirModalEditar(${c.id})" class="text-blue-600 hover:text-blue-800 font-semibold text-xs border border-blue-200 px-2 py-1 rounded hover:bg-blue-50 transition">✏️ Editar</button>
+                            <button onclick="eliminarCita(${c.id})" class="text-red-600 hover:text-red-800 font-semibold text-xs border border-red-200 px-2 py-1 rounded hover:bg-red-50 transition">🗑️ Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function abrirModalCrear() {
+            document.getElementById('cita-id').value = '';
+            document.getElementById('modal-titulo').innerText = 'Nueva Cita Médica';
+            document.getElementById('form-cita').reset();
+            document.getElementById('error-msg').classList.add('hidden');
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function abrirModalEditar(id) {
+            const cita = citasGlobales.find(c => c.id === id);
+            if (!cita) return;
+
+            document.getElementById('cita-id').value = cita.id;
+            document.getElementById('modal-titulo').innerText = `Editar Cita #${cita.id}`;
+            document.getElementById('select-mascota').value = cita.mascota;
+            document.getElementById('select-veterinario').value = cita.veterinario;
+            
+
+            const dt = new Date(cita.fecha_hora);
+            dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+            document.getElementById('input-fecha').value = dt.toISOString().slice(0, 16);
+
+            document.getElementById('input-motivo').value = cita.motivo;
+            document.getElementById('select-estado').value = cita.estado;
+
+            document.getElementById('error-msg').classList.add('hidden');
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-form').classList.add('hidden');
+        }
+
+
+        async function guardarCita(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('cita-id').value;
+            const payload = {
+                mascota: parseInt(document.getElementById('select-mascota').value),
+                veterinario: parseInt(document.getElementById('select-veterinario').value),
+                fecha_hora: new Date(document.getElementById('input-fecha').value).toISOString(),
+                motivo: document.getElementById('input-motivo').value,
+                estado: document.getElementById('select-estado').value
+            };
+
+            const url = id ? `/citas/${id}/` : '/citas/';
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    const errDiv = document.getElementById('error-msg');
+                    
+                    
+                    if (errData.fecha_hora) {
+                        errDiv.innerText = `⚠️ ${errData.fecha_hora[0]}`;
+                    } else if (errData.non_field_errors) {
+                        errDiv.innerText = `⚠️ ${errData.non_field_errors[0]}`;
+                    } else {
+                        errDiv.innerText = "Error al procesar la cita. Revisa los datos.";
+                    }
+                    errDiv.classList.remove('hidden');
+                    return;
+                }
+
+                cerrarModal();
+                await cargarTodo();
+            } catch (err) {
+                console.error("Error al guardar:", err);
+            }
+        }
+
+        // 2. ELIMINAR (DELETE)
+        async function eliminarCita(id) {
+            if (!confirm(`¿Estás seguro de que deseas eliminar la cita #${id}?`)) return;
+
+            try {
+                const res = await fetch(`/citas/${id}/`, { method: 'DELETE' });
+                if (res.ok) {
+                    await cargarTodo();
+                } else {
+                    alert("No se pudo eliminar la cita.");
+                }
+            } catch (err) {
+                console.error("Error al eliminar:", err);
+            }
+        }
+
+        window.onload = cargarTodo;
     </script>
 </body>
 </html>
