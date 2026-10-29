@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetCare - Gestión Veterinaria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800">
+
+    <!-- Navegación -->
+    <nav class="bg-indigo-700 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🐾</span>
+                <h1 class="text-2xl font-bold tracking-wide">PetCare</h1>
+            </div>
+            <div class="space-x-4">
+                <a href="#agenda" class="hover:text-indigo-200 transition">Agenda Médica</a>
+                <a href="#mascotas" class="hover:text-indigo-200 transition">Pacientes</a>
+                <a href="#recordatorios" class="hover:text-indigo-200 transition">Recordatorios</a>
+                <a href="/admin/" target="_blank" class="bg-indigo-600 hover:bg-indigo-800 px-3 py-2 rounded-lg text-sm font-semibold transition">Panel Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Banner Principal -->
+    <header class="bg-gradient-to-r from-indigo-600 to-blue-500 text-white py-12 px-4 shadow-inner">
+        <div class="max-w-7xl mx-auto text-center">
+            <h2 class="text-4xl font-extrabold mb-3">Sistema de Gestión Médica & Fichas Clínicas</h2>
+            <p class="text-indigo-100 text-lg max-w-2xl mx-auto">
+                Control de agenda en tiempo real, trazabilidad de fichas clínicas y automatización de esquemas de vacunación sincronizados con AWS RDS.
+            </p>
+        </div>
+    </header>
+
+    <!-- Contenido Principal / Dashboard -->
+    <main class="max-w-7xl mx-auto px-4 py-10 space-y-8">
+
+        <!-- Tarjetas Informativas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-indigo-500">
+                <p class="text-sm font-medium text-slate-500">Citas Registradas</p>
+                <p class="text-3xl font-bold text-slate-800 mt-1" id="total-citas">--</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-emerald-500">
+                <p class="text-sm font-medium text-slate-500">Pacientes Registrados</p>
+                <p class="text-3xl font-bold text-slate-800 mt-1" id="total-mascotas">--</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-amber-500">
+                <p class="text-sm font-medium text-slate-500">Vacunas / Recordatorios</p>
+                <p class="text-3xl font-bold text-slate-800 mt-1" id="total-recordatorios">--</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
+                <p class="text-sm font-medium text-slate-500">Estado Base de Datos</p>
+                <p class="text-sm font-bold text-emerald-600 mt-2">AWS RDS (Conectado)</p>
+            </div>
+        </div>
+
+        <!-- Tabla de Próximas Citas -->
+        <section id="agenda" class="bg-white p-6 rounded-xl shadow-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-slate-800">📅 Agenda Médica & Citas</h3>
+                <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-medium">Sincronizado vía API</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-sm border-b">
+                            <th class="py-3 px-4">Mascota</th>
+                            <th class="py-3 px-4">Veterinario</th>
+                            <th class="py-3 px-4">Fecha y Hora</th>
+                            <th class="py-3 px-4">Motivo</th>
+                            <th class="py-3 px-4">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-citas" class="text-sm divide-y">
+                        <tr>
+                            <td colspan="5" class="py-4 text-center text-slate-400">Cargando citas...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Conexión a Endpoints de Django -->
+    <script>
+        async function cargarDatos() {
+            try {
+                // 1. Cargar Citas Médicas desde /citas/
+                const resCitas = await fetch('/citas/');
+                const citas = await resCitas.json();
+                document.getElementById('total-citas').innerText = citas.length;
+
+                const tbody = document.getElementById('tabla-citas');
+                if (citas.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">No hay citas registradas. Agrégalas desde el admin.</td></tr>`;
+                } else {
+                    tbody.innerHTML = citas.map(c => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 font-semibold">Mascota #${c.mascota}</td>
+                            <td class="py-3 px-4">Veterinario #${c.veterinario}</td>
+                            <td class="py-3 px-4">${new Date(c.fecha_hora).toLocaleString()}</td>
+                            <td class="py-3 px-4">${c.motivo}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-semibold">${c.estado}</span>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // 2. Cargar Mascotas desde /mascotas/
+                const resMascotas = await fetch('/mascotas/');
+                const mascotas = await resMascotas.json();
+                document.getElementById('total-mascotas').innerText = mascotas.length;
+
+                // 3. Cargar Recordatorios desde /recordatorios/
+                const resRecordatorios = await fetch('/recordatorios/');
+                const recordatorios = await resRecordatorios.json();
+                document.getElementById('total-recordatorios').innerText = recordatorios.length;
+
+            } catch (err) {
+                console.error("Error al conectar con la API:", err);
+                document.getElementById('tabla-citas').innerHTML = `
+                    <tr><td colspan="5" class="py-4 text-center text-red-500">Error al cargar datos desde AWS RDS.</td></tr>
+                `;
+            }
+        }
+
+        window.onload = cargarDatos;
+    </script>
+</body>
+</html>
